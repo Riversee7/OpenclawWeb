@@ -147,7 +147,9 @@ app.get('/api/fs/download', (req, res) => {
   try {
     const absPath = path.resolve(filePath);
     if (fs.existsSync(absPath)) {
-      res.download(absPath);
+      // Set explicit Content-Disposition for download so we can use sendFile safely
+      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(absPath)}"`);
+      res.sendFile(absPath, { dotfiles: 'allow' });
     } else {
       res.status(404).json({ error: 'File not found' });
     }
@@ -164,7 +166,7 @@ app.get('/api/fs/view', (req, res) => {
   try {
     const absPath = path.resolve(filePath);
     if (fs.existsSync(absPath)) {
-      res.sendFile(absPath);
+      res.sendFile(absPath, { dotfiles: 'allow' });
     } else {
       res.status(404).json({ error: 'File not found' });
     }
