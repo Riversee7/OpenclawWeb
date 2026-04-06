@@ -283,6 +283,68 @@ app.post('/api/tools', (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// --- Calendar API ---
+const calendarFilePath = path.join(process.cwd(), 'calendar.json');
+
+const DEFAULT_CALENDAR = {
+  workingHours: {
+    start: "08:00",
+    end: "23:00",
+    sleepModeEnabled: true
+  },
+  routines: [
+    {
+      id: "rt-1",
+      name: "System Snapshot",
+      description: "Backup local directories and perform health diagnostics.",
+      schedule: "0 3 * * *",
+      nextRun: "03:00 AM",
+      active: true
+    },
+    {
+      id: "rt-2",
+      name: "Morning Briefing Intel",
+      description: "Scrape AI news and summarize to prompt context.",
+      schedule: "30 7 * * *",
+      nextRun: "07:30 AM",
+      active: false
+    }
+  ],
+  events: [
+    {
+      id: "ev-1",
+      title: "Analyze Server Logs",
+      time: new Date().toISOString(),
+      type: "task",
+      status: "pending"
+    }
+  ]
+};
+
+app.get('/api/calendar', (req, res) => {
+  try {
+    if (fs.existsSync(calendarFilePath)) {
+      const data = fs.readFileSync(calendarFilePath, 'utf8');
+      res.json(JSON.parse(data));
+    } else {
+      res.json(DEFAULT_CALENDAR);
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/calendar', (req, res) => {
+  try {
+    const calendarData = req.body;
+    fs.writeFileSync(calendarFilePath, JSON.stringify(calendarData, null, 2), 'utf8');
+    res.json({ success: true, message: 'Calendar updated successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Mission Control Backend running on http://localhost:${PORT}`);
 });

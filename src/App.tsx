@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Terminal as TerminalIcon, Settings, Compass, Cpu, Activity, ListTodo, HardDrive, Wrench } from 'lucide-react';
+import { Bot, Terminal as TerminalIcon, Settings, Compass, Cpu, Activity, ListTodo, HardDrive, Wrench, Calendar as CalendarIcon } from 'lucide-react';
 import { Terminal } from './Terminal';
 import { Explorer } from './Explorer';
 import { ToolsManager } from './Tools';
+import { Calendar } from './Calendar';
 
 // Erlaubt den Zugriff über das Netzwerk, indem die richtige IP-Adresse des Hosts ermittelt wird.
 const SERVER_URL = `http://${window.location.hostname}:3001`;
@@ -51,7 +52,7 @@ function App() {
         </div>
         
         <nav>
-          {['Overview', 'Logs & Commands', 'Server Storage', 'Agent Tools', 'Skills', 'Settings'].map((item) => (
+          {['Overview', 'Logs & Commands', 'Server Storage', 'Calendar & Tasks', 'Agent Tools', 'Skills', 'Settings'].map((item) => (
             <div 
               key={item} 
               className={`nav-item ${activeTab === item ? 'active' : ''}`}
@@ -60,6 +61,7 @@ function App() {
               {item === 'Overview' && <Activity size={18} />}
               {item === 'Logs & Commands' && <TerminalIcon size={18} />}
               {item === 'Server Storage' && <HardDrive size={18} />}
+              {item === 'Calendar & Tasks' && <CalendarIcon size={18} />}
               {item === 'Agent Tools' && <Wrench size={18} />}
               {item === 'Skills' && <Compass size={18} />}
               {item === 'Settings' && <Settings size={18} />}
@@ -164,8 +166,14 @@ function App() {
               <ToolsManager serverUrl={SERVER_URL} />
             </div>
           )}
+
+          {activeTab === 'Calendar & Tasks' && (
+            <div style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <Calendar serverUrl={SERVER_URL} />
+            </div>
+          )}
           
-          {activeTab !== 'Overview' && activeTab !== 'Logs & Commands' && activeTab !== 'Server Storage' && activeTab !== 'Agent Tools' && (
+          {activeTab !== 'Overview' && activeTab !== 'Logs & Commands' && activeTab !== 'Server Storage' && activeTab !== 'Agent Tools' && activeTab !== 'Calendar & Tasks' && (
             <div className="stat-card" style={{ gridColumn: 'span 12', height: '200px', alignItems: 'center', justifyContent: 'center' }}>
               <h3 style={{ color: 'var(--text-secondary)' }}>Module under construction</h3>
             </div>

@@ -1,0 +1,72 @@
+{
+  "elevenlabs": {
+    "name": "ElevenLabs TTS",
+    "description": "High-quality realistic voice generation API.",
+    "type": "external",
+    "installed": true,
+    "fields": [
+      {
+        "key": "apiKey",
+        "label": "API Key",
+        "type": "password"
+      }
+    ],
+    "config": {
+      "apiKey": ""
+    }
+  },
+  "zernio": {
+    "name": "Zernio",
+    "description": "Zernio account integration and tooling.",
+    "type": "external",
+    "installed": true,
+    "fields": [
+      {
+        "key": "accountId",
+        "label": "Account ID",
+        "type": "text"
+      },
+      {
+        "key": "apiKey",
+        "label": "API Key",
+        "type": "password"
+      }
+    ],
+    "config": {
+      "accountId": "",
+      "apiKey": ""
+    }
+  },
+  "edge-tts": {
+    "name": "Edge TTS",
+    "description": "Free, local Microsoft Edge Text-to-Speech.",
+    "type": "local",
+    "installed": false,
+    "fields": [],
+    "config": {}
+  },
+  "rclone": {
+    "name": "RClone",
+    "description": "Cloud storage synchronization via rclone.",
+    "type": "local",
+    "installed": false,
+    "fields": [],
+    "config": {}
+  },
+  "vercel": {
+    "name": "Vercel",
+    "description": "Manage and deploy OpenClaw to Vercel.",
+    "type": "external",
+    "installed": false,
+    "fields": [
+      {
+        "key": "vercelToken",
+        "label": "Vercel Token",
+        "type": "password"
+      }
+    ],
+    "config": {
+      "vercelToken": ""
+    }
+  }
+}
