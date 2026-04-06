@@ -162,8 +162,8 @@ export const Explorer: React.FC<ExplorerProps> = ({ serverUrl }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const formData = new FormData();
-    formData.append('file', file);
     formData.append('path', currentDir);
+    formData.append('file', file);
     setLoading(true);
     await fetch(`${serverUrl}/api/fs/upload`, { method: 'POST', body: formData });
     fetchList(currentDir);

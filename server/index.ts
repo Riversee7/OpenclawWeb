@@ -16,7 +16,7 @@ const SYSTEM_ROOT = path.parse(process.cwd()).root;
 
 // Setup Multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, res, cb) => {
+  destination: (req, file, cb) => {
     const dir = req.body.path || SYSTEM_ROOT;
     cb(null, dir);
   },
