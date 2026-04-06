@@ -151,14 +151,19 @@ app.get('/api/fs/download', (req, res) => {
     }
     
     const stat = fs.statSync(absPath);
-    res.writeHead(200, {
-      'Content-Length': stat.size,
-      'Content-Disposition': `attachment; filename="${path.basename(absPath)}"`,
-      'Content-Type': 'application/octet-stream',
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(absPath)}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.status(200);
+    
+    const readStream = fs.createReadStream(absPath);
+    readStream.on('error', (err: any) => {
+      console.error('Download Stream Error:', err.message);
+      if (!res.headersSent) res.status(500).json({ error: err.message });
     });
-    fs.createReadStream(absPath).pipe(res);
+    readStream.pipe(res);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) res.status(500).json({ error: error.message });
   }
 });
 
@@ -187,33 +192,39 @@ app.get('/api/fs/view', (req, res) => {
     else if (ext === '.pdf') contentType = 'application/pdf';
     else if (['.txt', '.md', '.json', '.ts', '.tsx', '.js'].includes(ext)) contentType = 'text/plain';
 
-    // Support Range headers for videos/audio
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+
     const range = req.headers.range;
     if (range) {
       const parts = range.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
       const chunksize = (end - start) + 1;
-      const fileStream = fs.createReadStream(absPath, { start, end });
       
-      res.writeHead(206, {
-        'Content-Range': `bytes ${start}-${end}/${stat.size}`,
-        'Accept-Ranges': 'bytes',
-        'Content-Length': chunksize,
-        'Content-Type': contentType,
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+      res.setHeader('Content-Length', chunksize);
+      res.status(206);
+      
+      const fileStream = fs.createReadStream(absPath, { start, end });
+      fileStream.on('error', (err: any) => {
+        console.error('View Stream Error:', err.message);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
       });
       fileStream.pipe(res);
     } else {
-      res.writeHead(200, {
-        'Content-Length': stat.size,
-        'Content-Type': contentType,
+      res.setHeader('Content-Length', stat.size);
+      res.status(200);
+      
+      const fileStream = fs.createReadStream(absPath);
+      fileStream.on('error', (err: any) => {
+        console.error('View Stream Error:', err.message);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
       });
-      fs.createReadStream(absPath).pipe(res);
+      fileStream.pipe(res);
     }
   } catch (error: any) {
-    if (!res.headersSent) {
-      res.status(500).json({ error: error.message });
-    }
+    if (!res.headersSent) res.status(500).json({ error: error.message });
   }
 });
 
