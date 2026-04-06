@@ -150,18 +150,11 @@ app.get('/api/fs/download', (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
     
-    const stat = fs.statSync(absPath);
-    res.setHeader('Content-Length', stat.size);
+    // Serve entirely from memory instead of pipe to bypass stream hangs
+    const buffer = fs.readFileSync(absPath);
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(absPath)}"`);
     res.setHeader('Content-Type', 'application/octet-stream');
-    res.status(200);
-    
-    const readStream = fs.createReadStream(absPath);
-    readStream.on('error', (err: any) => {
-      console.error('Download Stream Error:', err.message);
-      if (!res.headersSent) res.status(500).json({ error: err.message });
-    });
-    readStream.pipe(res);
+    res.status(200).send(buffer);
   } catch (error: any) {
     if (!res.headersSent) res.status(500).json({ error: error.message });
   }
@@ -200,28 +193,16 @@ app.get('/api/fs/view', (req, res) => {
       const parts = range.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
-      const chunksize = (end - start) + 1;
+      
+      const buffer = fs.readFileSync(absPath);
+      const slice = buffer.subarray(start, end + 1);
       
       res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
-      res.setHeader('Content-Length', chunksize);
-      res.status(206);
-      
-      const fileStream = fs.createReadStream(absPath, { start, end });
-      fileStream.on('error', (err: any) => {
-        console.error('View Stream Error:', err.message);
-        if (!res.headersSent) res.status(500).json({ error: err.message });
-      });
-      fileStream.pipe(res);
+      res.setHeader('Content-Length', slice.length);
+      res.status(206).send(slice);
     } else {
-      res.setHeader('Content-Length', stat.size);
-      res.status(200);
-      
-      const fileStream = fs.createReadStream(absPath);
-      fileStream.on('error', (err: any) => {
-        console.error('View Stream Error:', err.message);
-        if (!res.headersSent) res.status(500).json({ error: err.message });
-      });
-      fileStream.pipe(res);
+      const buffer = fs.readFileSync(absPath);
+      res.status(200).send(buffer);
     }
   } catch (error: any) {
     if (!res.headersSent) res.status(500).json({ error: error.message });
