@@ -208,7 +208,81 @@ app.get('/api/fs/view', (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: error.message });
   }
 });
+// --- Tools API ---
+const toolsFilePath = path.join(process.cwd(), 'tools.json');
 
+const DEFAULT_TOOLS = {
+  "elevenlabs": {
+    name: "ElevenLabs TTS",
+    description: "High-quality realistic voice generation API.",
+    type: "external",
+    installed: false,
+    fields: [
+      { key: "apiKey", label: "API Key", type: "password" }
+    ],
+    config: { apiKey: "" }
+  },
+  "zernio": {
+    name: "Zernio",
+    description: "Zernio account integration and tooling.",
+    type: "external",
+    installed: false,
+    fields: [
+      { key: "accountId", label: "Account ID", type: "text" },
+      { key: "apiKey", label: "API Key", type: "password" }
+    ],
+    config: { accountId: "", apiKey: "" }
+  },
+  "edge-tts": {
+    name: "Edge TTS",
+    description: "Free, local Microsoft Edge Text-to-Speech.",
+    type: "local",
+    installed: true,
+    fields: [],
+    config: {}
+  },
+  "rclone": {
+    name: "RClone",
+    description: "Cloud storage synchronization via rclone.",
+    type: "local",
+    installed: false,
+    fields: [],
+    config: {}
+  },
+  "vercel": {
+    name: "Vercel",
+    description: "Manage and deploy OpenClaw to Vercel.",
+    type: "external",
+    installed: false,
+    fields: [
+      { key: "vercelToken", label: "Vercel Token", type: "password" }
+    ],
+    config: { vercelToken: "" }
+  }
+};
+
+app.get('/api/tools', (req, res) => {
+  try {
+    if (fs.existsSync(toolsFilePath)) {
+      const data = fs.readFileSync(toolsFilePath, 'utf8');
+      res.json(JSON.parse(data));
+    } else {
+      res.json(DEFAULT_TOOLS);
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/tools', (req, res) => {
+  try {
+    const tools = req.body;
+    fs.writeFileSync(toolsFilePath, JSON.stringify(tools, null, 2), 'utf8');
+    res.json({ success: true, message: 'Tools updated successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Mission Control Backend running on http://localhost:${PORT}`);
 });
