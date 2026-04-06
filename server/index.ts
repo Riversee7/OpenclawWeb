@@ -146,13 +146,17 @@ app.get('/api/fs/download', (req, res) => {
   
   try {
     const absPath = path.resolve(filePath);
-    if (fs.existsSync(absPath)) {
-      // Set explicit Content-Disposition for download so we can use sendFile safely
-      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(absPath)}"`);
-      res.sendFile(absPath, { dotfiles: 'allow' });
-    } else {
-      res.status(404).json({ error: 'File not found' });
+    if (!fs.existsSync(absPath)) {
+      return res.status(404).json({ error: 'File not found' });
     }
+    
+    const stat = fs.statSync(absPath);
+    res.writeHead(200, {
+      'Content-Length': stat.size,
+      'Content-Disposition': `attachment; filename="${path.basename(absPath)}"`,
+      'Content-Type': 'application/octet-stream',
+    });
+    fs.createReadStream(absPath).pipe(res);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -165,13 +169,51 @@ app.get('/api/fs/view', (req, res) => {
   
   try {
     const absPath = path.resolve(filePath);
-    if (fs.existsSync(absPath)) {
-      res.sendFile(absPath, { dotfiles: 'allow' });
+    if (!fs.existsSync(absPath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    const stat = fs.statSync(absPath);
+    
+    // Basic explicit MIME types
+    const ext = path.extname(absPath).toLowerCase();
+    let contentType = 'application/octet-stream';
+    if (['.jpg', '.jpeg'].includes(ext)) contentType = 'image/jpeg';
+    else if (ext === '.png') contentType = 'image/png';
+    else if (ext === '.gif') contentType = 'image/gif';
+    else if (ext === '.webp') contentType = 'image/webp';
+    else if (ext === '.mp4') contentType = 'video/mp4';
+    else if (ext === '.mp3') contentType = 'audio/mpeg';
+    else if (ext === '.pdf') contentType = 'application/pdf';
+    else if (['.txt', '.md', '.json', '.ts', '.tsx', '.js'].includes(ext)) contentType = 'text/plain';
+
+    // Support Range headers for videos/audio
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+      const chunksize = (end - start) + 1;
+      const fileStream = fs.createReadStream(absPath, { start, end });
+      
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': contentType,
+      });
+      fileStream.pipe(res);
     } else {
-      res.status(404).json({ error: 'File not found' });
+      res.writeHead(200, {
+        'Content-Length': stat.size,
+        'Content-Type': contentType,
+      });
+      fs.createReadStream(absPath).pipe(res);
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
