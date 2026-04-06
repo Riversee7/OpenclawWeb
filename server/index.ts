@@ -147,9 +147,7 @@ app.get('/api/fs/download', (req, res) => {
   try {
     const absPath = path.resolve(filePath);
     if (fs.existsSync(absPath)) {
-      res.download(absPath, (err) => {
-        if (err) console.error("Download Error:", err.message);
-      });
+      res.download(absPath);
     } else {
       res.status(404).json({ error: 'File not found' });
     }
@@ -166,9 +164,7 @@ app.get('/api/fs/view', (req, res) => {
   try {
     const absPath = path.resolve(filePath);
     if (fs.existsSync(absPath)) {
-      res.sendFile(absPath, (err) => {
-        if (err) console.error("View Error:", err.message);
-      });
+      res.sendFile(absPath);
     } else {
       res.status(404).json({ error: 'File not found' });
     }
