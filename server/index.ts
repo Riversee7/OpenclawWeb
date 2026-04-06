@@ -145,8 +145,30 @@ app.get('/api/fs/download', (req, res) => {
   if (!filePath) return res.status(400).json({ error: 'Missing path' });
   
   try {
-    if (fs.existsSync(filePath)) {
-      res.download(filePath);
+    const absPath = path.resolve(filePath);
+    if (fs.existsSync(absPath)) {
+      res.download(absPath, (err) => {
+        if (err) console.error("Download Error:", err.message);
+      });
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 6. View file (for streaming media in browser without download prompt)
+app.get('/api/fs/view', (req, res) => {
+  const filePath = req.query.path as string;
+  if (!filePath) return res.status(400).json({ error: 'Missing path' });
+  
+  try {
+    const absPath = path.resolve(filePath);
+    if (fs.existsSync(absPath)) {
+      res.sendFile(absPath, (err) => {
+        if (err) console.error("View Error:", err.message);
+      });
     } else {
       res.status(404).json({ error: 'File not found' });
     }
