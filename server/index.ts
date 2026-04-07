@@ -315,9 +315,24 @@ const DEFAULT_CALENDAR = {
     {
       id: "ev-1",
       title: "Analyze Server Logs",
-      time: new Date().toISOString(),
-      type: "task",
-      status: "pending"
+      description: "Automated scan of recent system events for anomalies.",
+      start: new Date().toISOString(),
+      end: new Date(Date.now() + 3600000).toISOString(),
+      allDay: false,
+      category: "agent",
+      status: "pending",
+      metadata: { ai_reasoning: "Routine security check triggered by uptime interval." }
+    },
+    {
+      id: "ev-2",
+      title: "Project Sync",
+      description: "Manual meeting to discuss OpenClaw roadmap.",
+      start: new Date(Date.now() + 86400000).toISOString(),
+      end: new Date(Date.now() + 90000000).toISOString(),
+      allDay: false,
+      category: 'meeting',
+      status: 'pending',
+      metadata: {}
     }
   ]
 };
