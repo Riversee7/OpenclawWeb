@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, Moon, Sun, Play, Power, ListTodo, ChevronLeft, ChevronRight, X, Bot, User, Info } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar as CalendarIcon, Clock, Moon, Sun, Play, Power, ListTodo, ChevronLeft, ChevronRight, X, Bot, User, Info, Plus, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface WorkingHours {
   start: string;
@@ -24,7 +24,7 @@ interface Event {
   end: string;   // ISO String
   allDay: boolean;
   category: 'agent' | 'user' | 'meeting' | 'routine';
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'success' | 'error' | 'cancelled';
   metadata?: any;
 }
 
@@ -44,6 +44,9 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
   const [view, setView] = useState<'grid' | 'routines'>('grid');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  
+  // Context Menu State
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'day' | 'event', targetId?: string, date?: string } | null>(null);
 
   const fetchCalendar = async () => {
     try {
@@ -59,6 +62,10 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
 
   useEffect(() => {
     fetchCalendar();
+    // Close context menu on click elsewhere
+    const closeCtx = () => setContextMenu(null);
+    window.addEventListener('click', closeCtx);
+    return () => window.removeEventListener('click', closeCtx);
   }, [serverUrl]);
 
   const updateCalendar = async (newData: CalendarData) => {
@@ -74,21 +81,35 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
     }
   };
 
-  const handleWorkingHoursChange = (field: keyof WorkingHours, value: any) => {
+  const handleCreateEvent = (dateStr: string) => {
     if (!data) return;
-    const newData = { ...data };
-    newData.workingHours = { ...newData.workingHours, [field]: value };
+    const newEvent: Event = {
+      id: `ev-${Date.now()}`,
+      title: "New Agent Task",
+      description: "Manually created task via context menu.",
+      start: new Date(dateStr).toISOString(),
+      end: new Date(new Date(dateStr).getTime() + 3600000).toISOString(),
+      allDay: false,
+      category: 'user',
+      status: 'pending',
+      metadata: {}
+    };
+    const newData = { ...data, events: [...data.events, newEvent] };
     updateCalendar(newData);
+    setSelectedEvent(newEvent);
   };
 
-  const toggleRoutine = (id: string) => {
-    if (!data) return;
-    const newData = { ...data };
-    const routine = newData.routines.find(r => r.id === id);
-    if (routine) {
-      routine.active = !routine.active;
-      updateCalendar(newData);
-    }
+  const handleDeleteEvent = (id: string | undefined) => {
+    if (!data || !id) return;
+    const newData = { ...data, events: data.events.filter(e => e.id !== id) };
+    updateCalendar(newData);
+    if (selectedEvent?.id === id) setSelectedEvent(null);
+    setContextMenu(null);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, type: 'day' | 'event', date?: string, targetId?: string) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, type, date, targetId });
   };
 
   // Helper: Month Navigation
@@ -107,12 +128,10 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
     const firstDay = getFirstDayOfMonth(year, month);
     
     const days = [];
-    // Empty days for padding
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="cal-day empty"></div>);
+        days.push(<div key={`empty-${i}`} className="cal-day empty"></div>);
     }
     
-    // Actual days
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
       const dateString = date.toISOString().split('T')[0];
@@ -121,16 +140,22 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
       const dayEvents = data.events.filter(e => e.start.startsWith(dateString));
       
       days.push(
-        <div key={d} className={`cal-day ${isToday ? 'today' : ''}`}>
+        <div 
+          key={d} 
+          className={`cal-day ${isToday ? 'today' : ''}`}
+          onContextMenu={(e) => handleContextMenu(e, 'day', dateString)}
+        >
           <div className="day-number">{d}</div>
           <div className="day-events">
             {dayEvents.map(event => (
               <div 
                 key={event.id} 
-                className={`cal-event ${event.category}`}
-                onClick={() => setSelectedEvent(event)}
+                className={`cal-event ${event.category} ${event.status}`}
+                onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
+                onContextMenu={(e) => { e.stopPropagation(); handleContextMenu(e, 'event', undefined, event.id); }}
               >
-                {event.category === 'agent' && <Bot size={10} style={{marginRight: '4px'}} />}
+                {event.status === 'error' && <AlertCircle size={10} style={{marginRight: '4px'}} />}
+                {event.status === 'success' && <CheckCircle2 size={10} style={{marginRight: '4px'}} />}
                 {event.title}
               </div>
             ))}
@@ -138,7 +163,6 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
         </div>
       );
     }
-    
     return days;
   };
 
@@ -148,7 +172,6 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
 
   return (
     <div className="calendar-container">
-      {/* Header controls */}
       <div className="calendar-grid-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <h2 style={{fontSize: '1.5rem', margin: 0}}>
@@ -162,16 +185,10 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
         </div>
         
         <div className="calendar-tabs" style={{marginBottom: 0}}>
-          <button 
-            className={`cal-tab ${view === 'grid' ? 'active' : ''}`}
-            onClick={() => setView('grid')}
-          >
+          <button className={`cal-tab ${view === 'grid' ? 'active' : ''}`} onClick={() => setView('grid')}>
             <CalendarIcon size={16} /> Grid View
           </button>
-          <button 
-            className={`cal-tab ${view === 'routines' ? 'active' : ''}`}
-            onClick={() => setView('routines')}
-          >
+          <button className={`cal-tab ${view === 'routines' ? 'active' : ''}`} onClick={() => setView('routines')}>
             <Clock size={16} /> Routines
           </button>
         </div>
@@ -182,10 +199,7 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
           <div className="calendar-grid-weekdays">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d}>{d}</div>)}
           </div>
-          <div className="calendar-grid">
-            {renderGrid()}
-          </div>
-          
+          <div className="calendar-grid">{renderGrid()}</div>
           <div className="working-hours-card" style={{marginTop: '1rem'}}>
              <div className="wh-header">
                 <Bot size={18} color="var(--success)" />
@@ -199,35 +213,40 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
         <div className="routines-grid">
            {data.routines.map(routine => (
               <div key={routine.id} className={`routine-card ${routine.active ? 'active' : ''}`}>
-                <div className="routine-header">
+                 <div className="routine-header">
                   <div className="routine-title">
                     <Power size={16} color={routine.active ? "var(--success)" : "var(--text-secondary)"} />
                     <h4>{routine.name}</h4>
                   </div>
-                  <label className="switch">
-                    <input 
-                      type="checkbox" 
-                      checked={routine.active} 
-                      onChange={() => toggleRoutine(routine.id)} 
-                    />
-                    <span className="slider round"></span>
-                  </label>
                 </div>
-                <div className="routine-body">
-                  <p>{routine.description}</p>
-                  <div className="routine-meta">
-                    <div className="meta-item">
-                      <span>Schedule:</span> <code className="cron-code">{routine.schedule}</code>
-                    </div>
-                    {routine.active && (
-                      <div className="meta-item next-run">
-                        <Play size={12} /> Next Run: {routine.nextRun}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <div className="routine-body"><p>{routine.description}</p></div>
               </div>
             ))}
+        </div>
+      )}
+
+      {/* Context Menu Component */}
+      {contextMenu && (
+        <div 
+          className="calendar-context-menu" 
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contextMenu.type === 'day' ? (
+            <div className="ctx-item" onClick={() => handleCreateEvent(contextMenu.date!)}>
+              <Plus size={14} /> Create Event
+            </div>
+          ) : (
+            <>
+              <div className="ctx-item" onClick={() => setSelectedEvent(data.events.find(e => e.id === contextMenu.targetId) || null)}>
+                <Info size={14} /> View Details
+              </div>
+              <div className="ctx-divider"></div>
+              <div className="ctx-item danger" onClick={() => handleDeleteEvent(contextMenu.targetId)}>
+                <Trash2 size={14} /> Delete Event
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -237,7 +256,7 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
           <div className="event-modal" onClick={e => e.stopPropagation()}>
             <div className="event-modal-header">
                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  {selectedEvent.category === 'agent' ? <Bot size={20} color="var(--success)" /> : <User size={20} color="var(--accent-color)" />}
+                  {selectedEvent.category === 'agent' ? <Bot size={20} color={selectedEvent.status === 'error' ? 'var(--danger)' : 'var(--success)'} /> : <User size={20} color="var(--accent-color)" />}
                   <h3 style={{margin: 0}}>{selectedEvent.title}</h3>
                </div>
                <button onClick={() => setSelectedEvent(null)} className="modal-close-btn"><X size={20}/></button>
@@ -247,7 +266,18 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
                   <label>Description</label>
                   <p style={{margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)'}}>{selectedEvent.description}</p>
                </div>
-               <div style={{display: 'flex', gap: '1rem'}}>
+               
+               {selectedEvent.status === 'error' && (
+                 <div className="form-group">
+                    <label>Failure Report</label>
+                    <div className="error-badge">{selectedEvent.metadata?.errorCode || 'UNKNOWN_ERROR'}</div>
+                    <div className="error-message-box">
+                       {selectedEvent.metadata?.errorMessage || 'No detailed error message provided by the agent.'}
+                    </div>
+                 </div>
+               )}
+
+               <div style={{display: 'flex', gap: '1rem', marginTop: '0.5rem'}}>
                   <div className="form-group" style={{flex: 1}}>
                     <label>Start</label>
                     <div style={{fontSize: '0.85rem'}}>{new Date(selectedEvent.start).toLocaleString()}</div>
@@ -257,23 +287,25 @@ export const Calendar: React.FC<CalendarProps> = ({ serverUrl }) => {
                     <div style={{fontSize: '0.85rem'}}>{new Date(selectedEvent.end).toLocaleString()}</div>
                   </div>
                </div>
+               
                <div className="form-group">
-                  <label>Category</label>
-                  <div className={`cal-event ${selectedEvent.category}`} style={{width: 'fit-content'}}>
-                    {selectedEvent.category.toUpperCase()}
+                  <label>Status</label>
+                  <div className={`cal-event ${selectedEvent.status}`} style={{width: 'fit-content'}}>
+                    {selectedEvent.status.toUpperCase()}
                   </div>
                </div>
                
                {selectedEvent.metadata?.ai_reasoning && (
                  <div className="form-group">
                     <label>AI Reasoning (OpenClaw Notes)</label>
-                    <div className="ai-reasoning-box">
-                       {selectedEvent.metadata.ai_reasoning}
-                    </div>
+                    <div className="ai-reasoning-box">{selectedEvent.metadata.ai_reasoning}</div>
                  </div>
                )}
                
-               <div style={{marginTop: '1rem', display: 'flex', justifyContent: 'flex-end'}}>
+               <div style={{marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between'}}>
+                  <button className="ctx-item danger" style={{padding: '8px 12px', borderRadius: '4px'}} onClick={() => handleDeleteEvent(selectedEvent.id)}>
+                    <Trash2 size={16} /> Delete
+                  </button>
                   <button className="cal-nav-btn" onClick={() => setSelectedEvent(null)}>Close</button>
                </div>
             </div>

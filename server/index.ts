@@ -319,8 +319,8 @@ const DEFAULT_CALENDAR = {
       start: new Date().toISOString(),
       end: new Date(Date.now() + 3600000).toISOString(),
       allDay: false,
-      category: "agent",
-      status: "pending",
+      category: 'agent',
+      status: 'pending',
       metadata: { ai_reasoning: "Routine security check triggered by uptime interval." }
     },
     {
@@ -331,8 +331,22 @@ const DEFAULT_CALENDAR = {
       end: new Date(Date.now() + 90000000).toISOString(),
       allDay: false,
       category: 'meeting',
-      status: 'pending',
+      status: 'success',
       metadata: {}
+    },
+    {
+      id: "ev-3",
+      title: "Scrape Competitor Intel",
+      description: "Automated scraping of competitor pricing data.",
+      start: new Date(Date.now() - 3600000).toISOString(),
+      end: new Date(Date.now()).toISOString(),
+      allDay: false,
+      category: 'agent',
+      status: 'error',
+      metadata: { 
+        errorCode: "ERR_TIMEOUT_091", 
+        errorMessage: "The remote host took too long to respond during data ingestion." 
+      }
     }
   ]
 };

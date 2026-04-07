@@ -1392,3 +1392,98 @@ input:checked + .slider:before {
   font-style: italic;
   color: var(--success);
 }
+
+/* --- Context Menu & Status Upgrade --- */
+
+.calendar-context-menu {
+  position: fixed;
+  background: rgba(31, 40, 51, 0.95);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: 6px 0;
+  z-index: 2000;
+  min-width: 160px;
+  animation: contextMenuFade 0.15s ease-out;
+}
+
+@keyframes contextMenuFade {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.ctx-item {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctx-item:hover {
+  background: rgba(102, 252, 241, 0.1);
+  color: var(--accent-color);
+}
+
+.ctx-item.danger {
+  color: var(--danger);
+}
+
+.ctx-item.danger:hover {
+  background: rgba(255, 75, 75, 0.1);
+  color: var(--danger);
+}
+
+.ctx-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 4px 0;
+}
+
+/* Event Status Coloring */
+.cal-event.success {
+  background: rgba(0, 255, 136, 0.1);
+  color: var(--success) !important;
+  border-left-color: var(--success) !important;
+}
+
+.cal-event.error {
+  background: rgba(255, 75, 75, 0.12);
+  color: var(--danger) !important;
+  border-left-color: var(--danger) !important;
+  animation: shakeError 0.4s ease-in-out;
+}
+
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Error Code Styling in Modal */
+.error-badge {
+  background: rgba(255, 75, 75, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  width: fit-content;
+  margin-bottom: 8px;
+}
+
+.error-message-box {
+  background: rgba(255, 75, 75, 0.05);
+  border-left: 3px solid var(--danger);
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #ffcccc;
+  line-height: 1.5;
+}

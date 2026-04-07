@@ -1,0 +1,65 @@
+{
+  "workingHours": {
+    "start": "08:00",
+    "end": "23:00",
+    "sleepModeEnabled": true
+  },
+  "routines": [
+    {
+      "id": "rt-1",
+      "name": "System Snapshot",
+      "description": "Backup local directories and perform health diagnostics.",
+      "schedule": "0 3 * * *",
+      "nextRun": "03:00 AM",
+      "active": true
+    },
+    {
+      "id": "rt-2",
+      "name": "Morning Briefing Intel",
+      "description": "Scrape AI news and summarize to prompt context.",
+      "schedule": "30 7 * * *",
+      "nextRun": "07:30 AM",
+      "active": false
+    }
+  ],
+  "events": [
+    {
+      "id": "ev-1",
+      "title": "Analyze Server Logs",
+      "description": "Automated scan of recent system events for anomalies.",
+      "start": "2026-04-07T15:19:54.624Z",
+      "end": "2026-04-07T16:19:54.626Z",
+      "allDay": false,
+      "category": "agent",
+      "status": "pending",
+      "metadata": {
+        "ai_reasoning": "Routine security check triggered by uptime interval."
+      }
+    },
+    {
+      "id": "ev-2",
+      "title": "Project Sync",
+      "description": "Manual meeting to discuss OpenClaw roadmap.",
+      "start": "2026-04-08T15:19:54.626Z",
+      "end": "2026-04-08T16:19:54.626Z",
+      "allDay": false,
+      "category": "meeting",
+      "status": "success",
+      "metadata": {}
+    },
+    {
+      "id": "ev-3",
+      "title": "Scrape Competitor Intel",
+      "description": "Automated scraping of competitor pricing data.",
+      "start": "2026-04-07T14:19:54.626Z",
+      "end": "2026-04-07T15:19:54.626Z",
+      "allDay": false,
+      "category": "agent",
+      "status": "error",
+      "metadata": {
+        "errorCode": "ERR_TIMEOUT_091",
+        "errorMessage": "The remote host took too long to respond during data ingestion."
+      }
+    }
+  ]
+}
